@@ -3,17 +3,17 @@ import { AgentLogoWrapper } from "@/components/AgentLogoWrapper";
 import { userBets } from "@/lib/data";
 import { ArrowRight, TrendingUp, Wallet } from "lucide-react";
 import { useState } from "react";
+import { useWallet } from "@/lib/WalletContext";
 
 const onPlaceBet = () => {};
-const onConnectWallet = () => {};
 const onAgentClick = (agentId: string) => {};
 
 const PortfolioPage = () => {
 	const [activeTab, setActiveTab] = useState<"active" | "completed">("active");
+	const { isConnected: isWalletConnected, connectWallet } = useWallet();
 
 	const activeBets = userBets.filter((bet) => bet.status === "ACTIVE");
 	const completedBets = userBets.filter((bet) => bet.status === "COMPLETED");
-	const isWalletConnected = true;
 
 	// Show wallet connection prompt if not connected
 	if (!isWalletConnected) {
@@ -39,7 +39,7 @@ const PortfolioPage = () => {
 								across all markets.
 							</p>
 							<button
-								onClick={onConnectWallet}
+								onClick={connectWallet}
 								className="px-6 md:px-8 py-3 md:py-3.5 bg-white text-black border-2 border-black rounded-lg font-medium hover:bg-black hover:text-white transition-colors text-sm md:text-base inline-flex items-center gap-2"
 								style={{ fontFamily: "Space Grotesk" }}
 							>

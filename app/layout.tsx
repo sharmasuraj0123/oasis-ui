@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
-import { Navbar } from "@/components/Navbar";
+import { WalletProvider } from "@/lib/WalletContext";
+import { NavbarWrapper } from "@/components/NavbarWrapper";
 
 const spaceGrotesk = Space_Grotesk({
 	variable: "--font-space-grotesk",
@@ -30,11 +31,13 @@ export default function RootLayout({
 			<body
 				className={`${spaceGrotesk.variable} ${spaceMono.variable} antialiased`}
 			>
-				<Toaster />
-				<main className="min-h-screen flex flex-col bg-white text-black">
-					<Navbar isWalletConnected={false} />
-					{children}
-				</main>
+				<WalletProvider>
+					<Toaster />
+					<main className="min-h-screen flex flex-col bg-white text-black">
+						<NavbarWrapper />
+						{children}
+					</main>
+				</WalletProvider>
 			</body>
 		</html>
 	);

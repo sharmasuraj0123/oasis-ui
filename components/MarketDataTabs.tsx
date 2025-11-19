@@ -31,11 +31,11 @@ export function MarketDataTabs({ market }: MarketDataTabsProps) {
 			label: "Market Probability",
 			icon: TrendingUp,
 		},
-		{
-			id: "performance" as TabType,
-			label: "Performance Data",
-			icon: BarChart3,
-		},
+		// {
+		// 	id: "performance" as TabType,
+		// 	label: "Performance Data",
+		// 	icon: BarChart3,
+		// },
 		{ id: "feed" as TabType, label: "Trade Feed", icon: MessageSquare },
 	];
 

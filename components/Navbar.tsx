@@ -7,23 +7,17 @@ import { usePathname } from "next/navigation";
 
 interface NavbarProps {
 	isWalletConnected: boolean;
+	onConnectWallet: () => void;
 }
 
-export function Navbar({ isWalletConnected }: NavbarProps) {
+export function Navbar({ isWalletConnected, onConnectWallet }: NavbarProps) {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const pathname = usePathname();
 
-	// const handleNavigate = (
-	// 	page: "markets" | "market" | "agents" | "portfolio"
-	// ) => {
-	// 	setIsMobileMenuOpen(false);
-	// 	onNavigate(page);
-	// };
-
-	// const handleConnectWallet = () => {
-	// 	setIsMobileMenuOpen(false);
-	// 	onConnectWallet();
-	// };
+	const handleConnectWallet = () => {
+		setIsMobileMenuOpen(false);
+		onConnectWallet();
+	};
 
 	return (
 		<nav className="border-b border-[--color-border] px-4 md:px-6 lg:px-8 py-3 md:py-5">
@@ -92,7 +86,7 @@ export function Navbar({ isWalletConnected }: NavbarProps) {
 				<div className="flex items-center gap-3">
 					{/* Desktop Wallet Button */}
 					<button
-						// onClick={onConnectWallet}
+						onClick={onConnectWallet}
 						className="hidden md:flex items-center gap-2 px-5 py-2.5 border-2 border-black rounded-[10px] hover:bg-black hover:text-white transition-colors font-medium"
 						style={{
 							fontFamily: "Space Mono",
@@ -210,7 +204,7 @@ export function Navbar({ isWalletConnected }: NavbarProps) {
 						style={{ paddingTop: "25px", paddingBottom: "25px" }}
 					>
 						<button
-							// onClick={handleConnectWallet}
+							onClick={handleConnectWallet}
 							className="w-full flex items-center justify-center gap-3 bg-white border-2 border-black rounded-full hover:bg-black hover:text-white transition-colors"
 							style={{ height: "60px" }}
 						>
