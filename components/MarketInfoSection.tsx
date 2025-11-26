@@ -63,6 +63,23 @@ export function MarketInfoSection({ market }: MarketInfoSectionProps) {
 				};
 
 			case "AI Success Metrics":
+				// Check if this is a Myriad market with full description
+				if (market.myriadData && market.description) {
+					return {
+						title: "About this Market",
+						description: market.description,
+						details: [],
+						dataUpdates:
+							"Market data is sourced from Myriad Protocol and updated in real-time.",
+						findMore: [
+							{
+								label: "Resolution Source",
+								text: market.myriadData ? `Data will be verified from official sources.` : "Market resolves based on verifiable data.",
+							},
+						],
+					};
+				}
+				
 				return {
 					title: "About this Market",
 					description: `This market tracks whether ${market.agent.name} can maintain a competitive advantage in yield optimization strategies.`,

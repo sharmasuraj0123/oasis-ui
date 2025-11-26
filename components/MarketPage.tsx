@@ -14,6 +14,11 @@ import { BettingWidget } from "./BettingWidget";
 import { FloatingBetButton } from "./FloatingBetButton";
 import { ChatModal } from "./ChatModal";
 import { BettingModal } from "./BettingModal";
+import { TokenInfoPanel } from "./TokenInfoPanel";
+import { FeeInfoPanel } from "./FeeInfoPanel";
+import { OutcomeDetailsPanel } from "./OutcomeDetailsPanel";
+import { ExtendedMarketInfo } from "./ExtendedMarketInfo";
+import { MarketTimeline } from "./MarketTimeline";
 
 const onAgentClick = (agentId: string) => {};
 const onPlaceBet = () => {};
@@ -298,6 +303,37 @@ export const MarketPage = ({
 
 						{/* Market Info Section */}
 						<MarketInfoSection market={currentMarket} />
+
+						{/* Extended Myriad Data */}
+						{currentMarket.myriadData && (
+							<div className="mt-4 md:mt-5 space-y-4">
+								{/* Market Timeline */}
+								<MarketTimeline
+									publishedAt={currentMarket.myriadData.publishedAt}
+									expiresAt={currentMarket.myriadData.expiresAt}
+									resolutionSource={currentMarket.myriadData.resolutionSource}
+									resolutionTitle={currentMarket.myriadData.resolutionTitle}
+								/>
+
+								{/* Token Information */}
+								<TokenInfoPanel
+									token={currentMarket.myriadData.token}
+									networkId={currentMarket.myriadData.networkId}
+								/>
+
+								{/* Extended Market Information */}
+								<ExtendedMarketInfo
+									myriadData={currentMarket.myriadData}
+									volume24h={currentMarket.myriadData.volume24h}
+								/>
+
+								{/* Fee Structure */}
+								<FeeInfoPanel fees={currentMarket.myriadData.fees} />
+
+								{/* Outcome Details */}
+								<OutcomeDetailsPanel outcomes={currentMarket.myriadData.outcomes} />
+							</div>
+						)}
 					</div>
 
 					{/* Mobile Status Panels (Upcoming/Resolved only) */}

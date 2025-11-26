@@ -140,9 +140,6 @@ export function BettingModal({
 		setSelectedOutcome(null);
 	};
 
-	// Move hook to top level
-	const { account, isConnected, connectWallet, signer, provider, chainId } = useWallet();
-
 	if (!isOpen || !currentMarket) return null;
 
 	const odds =
@@ -151,6 +148,8 @@ export function BettingModal({
 		? (parseFloat(betAmount) * odds).toFixed(2)
 		: "0.00";
 	const fee = betAmount ? (parseFloat(betAmount) * 0.01).toFixed(2) : "0.00"; // 1% fee
+
+	const { account, isConnected, connectWallet, signer, provider, chainId } = useWallet();
 
 	const handlePlaceBet = async () => {
 		if (!selectedOutcome || !betAmount || parseFloat(betAmount) <= 0) {
@@ -176,7 +175,9 @@ export function BettingModal({
 		try {
 			// Get the Myriad market data for network info
 			const myriadMarketId = currentMarket.id.replace("myriad-", "");
-			const isMyriadMarket = currentMarket.id.startsWith("myriad-") || currentMarket.id === "lebron-james";
+			const isMyriadMarket = currentMarket.id.startsWith("myriad-") || 
+			                       currentMarket.id === "lebron-james" || 
+			                       currentMarket.id === "oscar-piastri";
 
 			if (!isMyriadMarket) {
 				throw new Error("This market does not support on-chain betting yet");
@@ -186,6 +187,8 @@ export function BettingModal({
 			let myriadMarket;
 			if (currentMarket.id === "lebron-james") {
 				myriadMarket = await fetchMyriadMarket(3, 59141); // LeBron market on Linea
+			} else if (currentMarket.id === "oscar-piastri") {
+				myriadMarket = await fetchMyriadMarket(1, 59141); // Oscar Piastri F1 market on Linea
 			} else {
 				myriadMarket = await fetchMyriadMarket(parseInt(myriadMarketId), currentMarket.agent.id === "myriad" ? 59141 : 11124);
 			}

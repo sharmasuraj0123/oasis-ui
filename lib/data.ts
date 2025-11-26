@@ -280,6 +280,62 @@ export interface BinaryMarket {
 		name: string;
 		logo?: string;
 	}[];
+	// Myriad-specific extended data
+	myriadData?: {
+		networkId: number;
+		slug: string;
+		imageUrl: string;
+		publishedAt: string;
+		expiresAt: string;
+		resolutionSource?: string;
+		resolutionTitle?: string;
+		token: {
+			name: string;
+			address: string;
+			symbol: string;
+			decimals: number;
+		};
+		fees: {
+			buy: {
+				fee: number;
+				treasury_fee: number;
+				distributor_fee: number;
+			};
+			sell: {
+				fee: number;
+				treasury_fee: number;
+				distributor_fee: number;
+			};
+			treasury: string;
+			distributor: string;
+		};
+		volume24h: number;
+		liquidityPrice: number;
+		shares: number;
+		voided: boolean;
+		resolvedOutcomeId: number;
+		inPlay: boolean;
+		perpetual: boolean;
+		moneyline: boolean;
+		outcomes: Array<{
+			id: number;
+			title: string;
+			shares: number;
+			sharesHeld: number;
+			price: number;
+			closingPrice: number | null;
+			priceChange24h: number;
+			imageUrl: string;
+			price_charts?: Array<{
+				timeframe: string;
+				prices: Array<{
+					value: number;
+					timestamp: number;
+					date: string;
+				}>;
+			}>;
+		}>;
+	};
 }
 
 // Mock markets data - new binary prediction markets

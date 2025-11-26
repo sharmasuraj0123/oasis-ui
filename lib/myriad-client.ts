@@ -32,27 +32,44 @@ async function myriadFetch<T>(
 		...options.headers,
 	};
 
-	const response = await fetch(`${MYRIAD_API_URL}${endpoint}`, {
+	const url = `${MYRIAD_API_URL}${endpoint}`;
+	
+	console.log("=== MYRIAD API REQUEST (Client) ===");
+	console.log("URL:", url);
+	console.log("Method:", options.method || "GET");
+	if (options.body) {
+		console.log("Body:", options.body);
+	}
+
+	const response = await fetch(url, {
 		...options,
 		headers,
 		// Add cache revalidation for Next.js
 		next: { revalidate: 60 }, // Revalidate every 60 seconds
 	});
 
+	console.log("Response status:", response.status);
+
 	if (!response.ok) {
 		let errorMessage = `Myriad API error: ${response.status} ${response.statusText}`;
 
 		try {
 			const errorData: MyriadErrorResponse = await response.json();
+			console.log("Error response:", JSON.stringify(errorData, null, 2));
 			errorMessage = errorData.message || errorMessage;
 		} catch (e) {
 			// If JSON parsing fails, use default error message
 		}
 
+		console.log("=== END MYRIAD API REQUEST (Client) - ERROR ===");
 		throw new Error(errorMessage);
 	}
 
-	return response.json();
+	const responseData = await response.json();
+	console.log("Response data:", JSON.stringify(responseData, null, 2));
+	console.log("=== END MYRIAD API REQUEST (Client) ===");
+
+	return responseData;
 }
 
 /**
@@ -173,6 +190,21 @@ export async function fetchLeBronJamesMarket(): Promise<MyriadMarket> {
 		return await fetchMyriadMarket(LEBRON_MARKET_ID, LINEA_TESTNET_ID);
 	} catch (error) {
 		console.error("Failed to fetch LeBron James market:", error);
+		throw error;
+	}
+}
+
+/**
+ * Fetch the Oscar Piastri F1 market specifically
+ */
+export async function fetchOscarPiastriMarket(): Promise<MyriadMarket> {
+	const PIASTRI_MARKET_ID = 1;
+	const LINEA_TESTNET_ID = 59141;
+
+	try {
+		return await fetchMyriadMarket(PIASTRI_MARKET_ID, LINEA_TESTNET_ID);
+	} catch (error) {
+		console.error("Failed to fetch Oscar Piastri F1 market:", error);
 		throw error;
 	}
 }

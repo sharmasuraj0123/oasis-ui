@@ -1,17 +1,48 @@
 // Myriad Protocol API Types
 
+export interface PriceChartPoint {
+	value: number;
+	timestamp: number;
+	date: string;
+}
+
+export interface PriceCharts {
+	timeframe: string;
+	prices: PriceChartPoint[];
+}
+
 export interface MyriadOutcome {
 	id: number;
 	title: string;
 	price: number;
 	shares: number;
 	sharesHeld: number;
-	price_charts?: {
-		"24h"?: Array<{ timestamp: number; price: number }>;
-		"7d"?: Array<{ timestamp: number; price: number }>;
-		"30d"?: Array<{ timestamp: number; price: number }>;
-		all?: Array<{ timestamp: number; price: number }>;
+	closingPrice: number | null;
+	priceChange24h: number;
+	imageUrl: string;
+	price_charts?: PriceCharts[];
+}
+
+export interface TokenInfo {
+	name: string;
+	address: string;
+	symbol: string;
+	decimals: number;
+}
+
+export interface FeeStructure {
+	buy: {
+		fee: number;
+		treasury_fee: number;
+		distributor_fee: number;
 	};
+	sell: {
+		fee: number;
+		treasury_fee: number;
+		distributor_fee: number;
+	};
+	treasury: string;
+	distributor: string;
 }
 
 export interface MyriadMarket {
@@ -21,14 +52,25 @@ export interface MyriadMarket {
 	title: string;
 	description: string;
 	state: "open" | "closed" | "resolved";
+	voided: boolean;
+	resolvedOutcomeId: number;
 	volume: number;
+	volume24h: number;
 	liquidity: number;
-	tokenAddress: string;
+	liquidityPrice: number;
+	shares: number;
+	imageUrl: string;
+	token: TokenInfo;
+	fees: FeeStructure;
 	expiresAt: string;
 	publishedAt: string;
 	resolutionSource: string;
 	resolutionTitle?: string;
 	topics: string[];
+	inPlay: boolean;
+	inPlayStartsAt: string | null;
+	perpetual: boolean;
+	moneyline: boolean;
 	outcomes: MyriadOutcome[];
 }
 

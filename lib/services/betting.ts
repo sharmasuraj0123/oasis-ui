@@ -43,12 +43,42 @@ export const NETWORK_CONFIG = {
 	},
 };
 
-// ERC20 ABI (minimal for approve)
+// ERC20 ABI (minimal for approve, balance, and allowance checks)
 const ERC20_ABI = [
-	"function approve(address spender, uint256 amount) returns (bool)",
-	"function allowance(address owner, address spender) view returns (uint256)",
-	"function balanceOf(address account) view returns (uint256)",
-	"function decimals() view returns (uint8)",
+	{
+		"constant": true,
+		"inputs": [{"name": "_owner", "type": "address"}],
+		"name": "balanceOf",
+		"outputs": [{"name": "balance", "type": "uint256"}],
+		"type": "function"
+	},
+	{
+		"constant": false,
+		"inputs": [
+			{"name": "_spender", "type": "address"},
+			{"name": "_value", "type": "uint256"}
+		],
+		"name": "approve",
+		"outputs": [{"name": "", "type": "bool"}],
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [
+			{"name": "_owner", "type": "address"},
+			{"name": "_spender", "type": "address"}
+		],
+		"name": "allowance",
+		"outputs": [{"name": "", "type": "uint256"}],
+		"type": "function"
+	},
+	{
+		"constant": true,
+		"inputs": [],
+		"name": "decimals",
+		"outputs": [{"name": "", "type": "uint8"}],
+		"type": "function"
+	}
 ];
 
 // Quote request interface
@@ -94,6 +124,11 @@ export async function getTradeQuote(
 		throw new Error("Myriad API key not configured");
 	}
 
+	console.log("=== MYRIAD API REQUEST ===");
+	console.log("Endpoint:", `${baseUrl}/markets/quote`);
+	console.log("Method: POST");
+	console.log("Request payload:", JSON.stringify(request, null, 2));
+
 	const response = await fetch(`${baseUrl}/markets/quote`, {
 		method: "POST",
 		headers: {
@@ -103,14 +138,21 @@ export async function getTradeQuote(
 		body: JSON.stringify(request),
 	});
 
+	console.log("Response status:", response.status);
+	
 	if (!response.ok) {
 		const error = await response.json().catch(() => ({}));
+		console.log("Response error:", JSON.stringify(error, null, 2));
 		throw new Error(
 			error.message || `Failed to get quote: ${response.statusText}`
 		);
 	}
 
-	return response.json();
+	const responseData = await response.json();
+	console.log("Response data:", JSON.stringify(responseData, null, 2));
+	console.log("=== END MYRIAD API REQUEST ===");
+
+	return responseData;
 }
 
 /**
@@ -155,6 +197,7 @@ export async function switchNetwork(
 
 /**
  * Get token address for a market
+ * This is a simplified version - in production, you'd get this from the market data
  */
 export function getTokenAddress(networkId: number, market: MyriadMarket): string {
 	const config = NETWORK_CONFIG[networkId as keyof typeof NETWORK_CONFIG];
@@ -164,15 +207,35 @@ export function getTokenAddress(networkId: number, market: MyriadMarket): string
 
 	// For now, use USDC as default for Linea
 	if (networkId === 59141) {
-		return (config.tokens as any).USDC;
+		const lineaConfig = NETWORK_CONFIG[59141];
+		return lineaConfig.tokens.USDC;
 	}
 
 	// For Abstract, use PTS as default
 	if (networkId === 11124) {
-		return (config.tokens as any).PTS;
+		const abstractConfig = NETWORK_CONFIG[11124];
+		return abstractConfig.tokens.PTS;
 	}
 
 	throw new Error("Could not determine token address");
+}
+
+/**
+ * Get token decimals for a network
+ */
+export function getTokenDecimals(networkId: number): number {
+	// Linea uses USDC (6 decimals)
+	if (networkId === 59141) {
+		return 6;
+	}
+	
+	// Abstract uses PTS (18 decimals)
+	if (networkId === 11124) {
+		return 18;
+	}
+	
+	// Default to 18 for unknown tokens
+	return 18;
 }
 
 /**
@@ -182,21 +245,31 @@ export async function ensureTokenApproval(
 	signer: JsonRpcSigner,
 	tokenAddress: string,
 	spenderAddress: string,
-	amount: bigint
+	amount: bigint,
+	decimals: number = 18
 ): Promise<boolean> {
 	try {
+		console.log("=== TOKEN APPROVAL CHECK ===");
+		console.log("Token address:", tokenAddress);
+		console.log("Spender address:", spenderAddress);
+		console.log("Amount needed (wei):", amount.toString());
+		console.log("Decimals:", decimals);
+		
 		const tokenContract = new Contract(tokenAddress, ERC20_ABI, signer);
 		const userAddress = await signer.getAddress();
+		console.log("User address:", userAddress);
 
 		// Check if token contract exists
 		try {
 			const code = await signer.provider.getCode(tokenAddress);
+			console.log("Token contract code length:", code.length);
 			if (code === "0x") {
 				throw new Error(
 					`Token contract not found at ${tokenAddress}. Make sure you're on the correct network and have the right token.`
 				);
 			}
 		} catch (error) {
+			console.error("Failed to verify token contract:", error);
 			throw new Error(
 				`Failed to verify token contract. You may not have the required tokens in your wallet.`
 			);
@@ -206,13 +279,19 @@ export async function ensureTokenApproval(
 		let balance: bigint;
 		try {
 			balance = await tokenContract.balanceOf(userAddress);
+			console.log("Token balance (wei):", balance.toString());
+			console.log("Token balance (human):", (Number(balance) / Math.pow(10, decimals)).toFixed(decimals));
 		} catch (error) {
+			console.error("Failed to check balance:", error);
 			throw new Error(
 				"Failed to check token balance. Make sure you have the required tokens."
 			);
 		}
 
 		if (balance < amount) {
+			console.error("Insufficient balance!");
+			console.error("Need:", amount.toString());
+			console.error("Have:", balance.toString());
 			throw new Error(
 				`Insufficient token balance. You need ${amount.toString()} tokens but only have ${balance.toString()}.`
 			);
@@ -222,23 +301,36 @@ export async function ensureTokenApproval(
 		let allowance: bigint;
 		try {
 			allowance = await tokenContract.allowance(userAddress, spenderAddress);
+			console.log("Current allowance (wei):", allowance.toString());
+			console.log("Current allowance (human):", (Number(allowance) / Math.pow(10, decimals)).toFixed(decimals));
 		} catch (error) {
+			console.error("Failed to check allowance:", error);
 			throw new Error("Failed to check token allowance.");
 		}
 
 		if (allowance >= amount) {
+			console.log("✓ Sufficient allowance already exists");
+			console.log("=== END TOKEN APPROVAL CHECK ===");
 			return true; // Already approved
 		}
 
+		console.log("⚠ Insufficient allowance, requesting approval...");
 		// Request approval for a large amount to avoid repeated approvals
-		const maxApproval = parseUnits("1000000", 18); // Approve 1M tokens
+		const maxApproval = parseUnits("1000000", decimals); // Approve 1M tokens with correct decimals
+		console.log("Requesting approval for:", maxApproval.toString());
+		
 		const approveTx = await tokenContract.approve(spenderAddress, maxApproval);
+		console.log("Approval transaction sent:", approveTx.hash);
+		
 		const receipt = await approveTx.wait();
+		console.log("Approval transaction confirmed:", receipt?.hash);
 
 		if (!receipt || receipt.status === 0) {
 			throw new Error("Token approval transaction failed");
 		}
 
+		console.log("✓ Approval successful");
+		console.log("=== END TOKEN APPROVAL CHECK ===");
 		return true;
 	} catch (error: any) {
 		console.error("Token approval error:", error);
@@ -305,43 +397,46 @@ export async function executeBet(
 			);
 		}
 
-		// Validate quote data
-		if (!quote.calldata || quote.calldata === "0x" || quote.calldata.length < 10) {
-			console.error("Invalid quote received:", quote);
-			throw new Error("Received invalid trade data from API. Please try again.");
-		}
-
-		// Step 2: Get token address
+		// Step 2: Get token address and decimals
 		const tokenAddress = getTokenAddress(networkId, market);
-
-		// Step 3: Get token decimals (may vary)
-		const tokenContract = new Contract(tokenAddress, ERC20_ABI, signer);
-		let decimals = 6;
-		try {
-			decimals = await tokenContract.decimals();
-		} catch (error) {
-			console.warn("Could not get token decimals, using 18");
-		}
+		const decimals = getTokenDecimals(networkId);
+		
+		console.log(`Using token ${tokenAddress} with ${decimals} decimals for ${amount} tokens`);
 
 		const amountWei = parseUnits(amount.toString(), decimals);
+		console.log(`Amount in wei: ${amountWei.toString()}`);
 
-		// Step 4: Check/approve token
+		// Step 3: Check/approve token
 		await ensureTokenApproval(
 			signer,
 			tokenAddress,
 			config.predictionMarket,
-			amountWei
+			amountWei,
+			decimals
 		);
 
-		// Step 5: Execute transaction with calldata from quote
+		// Verify allowance after approval
+		const tokenContract = new Contract(tokenAddress, ERC20_ABI, signer);
+		const userAddress = await signer.getAddress();
+		const finalAllowance = await tokenContract.allowance(userAddress, config.predictionMarket);
+		console.log("Final allowance after approval (wei):", finalAllowance.toString());
+		console.log("Final allowance (human):", (Number(finalAllowance) / Math.pow(10, decimals)).toFixed(decimals));
+
+		// Step 4: Execute transaction with calldata from quote
+		console.log("=== EXECUTING TRANSACTION ===");
+		console.log("To:", config.predictionMarket);
+		console.log("Calldata:", quote.calldata);
+		console.log("Gas limit: Auto (wallet will estimate)");
+		
 		let tx;
 		try {
 			tx = await signer.sendTransaction({
 				to: config.predictionMarket,
 				data: quote.calldata,
-				gasLimit: 500000,
 			});
+			console.log("Transaction hash:", tx.hash);
 		} catch (error: any) {
+			console.error("Transaction send error:", error);
 			if (error.code === 4001) {
 				throw new Error("You rejected the transaction");
 			} else if (error.message?.includes("insufficient funds")) {
@@ -355,13 +450,18 @@ export async function executeBet(
 			}
 		}
 
-		// Step 6: Wait for confirmation
+		// Step 5: Wait for confirmation
+		console.log("Waiting for transaction confirmation...");
 		const receipt = await tx.wait();
+		console.log("Transaction receipt:", JSON.stringify(receipt, null, 2));
 
 		if (!receipt || receipt.status === 0) {
+			console.error("Transaction reverted!");
 			throw new Error("Transaction was reverted by the contract");
 		}
 
+		console.log("✓ Transaction successful!");
+		console.log("=== END EXECUTING TRANSACTION ===");
 		return receipt.hash;
 	} catch (error: any) {
 		console.error("Execute bet error:", error);
@@ -385,19 +485,33 @@ export async function getUserPortfolio(
 		throw new Error("Myriad API key not configured");
 	}
 
-	const response = await fetch(
-		`${baseUrl}/users/${address}/portfolio?network_id=${networkId}`,
-		{
-			headers: {
-				"Content-Type": "application/json",
-				"x-api-key": apiKey,
-			},
-		}
-	);
+	const url = `${baseUrl}/users/${address}/portfolio?network_id=${networkId}`;
+	
+	console.log("=== MYRIAD API REQUEST (Portfolio) ===");
+	console.log("Endpoint:", url);
+	console.log("Method: GET");
+	console.log("Address:", address);
+	console.log("Network ID:", networkId);
+
+	const response = await fetch(url, {
+		headers: {
+			"Content-Type": "application/json",
+			"x-api-key": apiKey,
+		},
+	});
+
+	console.log("Response status:", response.status);
 
 	if (!response.ok) {
+		const error = await response.text();
+		console.log("Response error:", error);
 		throw new Error("Failed to fetch portfolio");
 	}
 
-	return response.json();
+	const responseData = await response.json();
+	console.log("Response data:", JSON.stringify(responseData, null, 2));
+	console.log("=== END MYRIAD API REQUEST (Portfolio) ===");
+
+	return responseData;
 }
+
