@@ -116,7 +116,7 @@ export function MarketDataTabs({ market }: MarketDataTabsProps) {
 			<div className="w-full">
 				{activeTab === "probability" && (
 					<div className="animate-fadeIn" style={{ height: "500px" }}>
-						<PerformanceGraph marketStatus={market.status} />
+						{/* <PerformanceGraph marketStatus={market.status} /> */}
 					</div>
 				)}
 

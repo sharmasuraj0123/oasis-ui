@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { WalletProvider } from "@/lib/WalletContext";
 import { NavbarWrapper } from "@/components/NavbarWrapper";
+import { DebugConsole } from "@/components/DebugConsole";
 
 const spaceGrotesk = Space_Grotesk({
 	variable: "--font-space-grotesk",
@@ -27,7 +28,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en">
+		<html lang="en" suppressHydrationWarning>
 			<body
 				className={`${spaceGrotesk.variable} ${spaceMono.variable} antialiased`}
 			>
@@ -36,6 +37,7 @@ export default function RootLayout({
 					<main className="min-h-screen flex flex-col bg-white text-black">
 						<NavbarWrapper />
 						{children}
+						<DebugConsole />
 					</main>
 				</WalletProvider>
 			</body>

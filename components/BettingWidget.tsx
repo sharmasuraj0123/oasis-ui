@@ -1,10 +1,25 @@
 import { TrendingUp } from "lucide-react";
+import { BinaryMarket } from "@/lib/data";
 
 interface BettingWidgetProps {
 	onPlaceBet: () => void;
+	market?: BinaryMarket;
 }
 
-export function BettingWidget({ onPlaceBet }: BettingWidgetProps) {
+export function BettingWidget({ onPlaceBet, market }: BettingWidgetProps) {
+	// Calculate total pool size
+	const totalPool = market
+		? market.yesPoolSize + market.noPoolSize
+		: 0;
+
+	// Format pool size for display
+	const formatPoolSize = (size: number) => {
+		if (size >= 1000) {
+			return `$${(size / 1000).toFixed(1)}K`;
+		}
+		return `$${size.toFixed(0)}`;
+	};
+
 	return (
 		<div
 			className="border border-[#eaeaea] bg-white p-[21px]"
@@ -57,7 +72,7 @@ export function BettingWidget({ onPlaceBet }: BettingWidgetProps) {
 							lineHeight: "24px",
 						}}
 					>
-						$23,430
+						{market ? formatPoolSize(totalPool) : "$0"}
 					</div>
 				</div>
 				<div className="p-[13px] bg-[#fafafa] rounded-[10px] border border-[#eaeaea]">
@@ -98,41 +113,67 @@ export function BettingWidget({ onPlaceBet }: BettingWidgetProps) {
 			</button>
 
 			{/* Popular Bet */}
-			<div className="mt-4 pt-4 border-t border-[#eaeaea]">
-				<div
-					className="text-[#666666] mb-2"
-					style={{
-						fontFamily: "Space Mono",
-						fontSize: "11px",
-						lineHeight: "17.6px",
-						textTransform: "uppercase",
-					}}
-				>
-					Most Popular
-				</div>
-				<div className="flex items-center justify-between">
-					<span
-						className="font-medium"
-						style={{
-							fontFamily: "Space Grotesk",
-							fontSize: "14px",
-							lineHeight: "22.4px",
-						}}
-					>
-						GTrader
-					</span>
-					<span
-						className="text-[#00b67a] font-bold"
+			{market && (
+				<div className="mt-4 pt-4 border-t border-[#eaeaea]">
+					<div
+						className="text-[#666666] mb-2"
 						style={{
 							fontFamily: "Space Mono",
-							fontSize: "14px",
-							lineHeight: "22.4px",
+							fontSize: "11px",
+							lineHeight: "17.6px",
+							textTransform: "uppercase",
 						}}
 					>
-						1.72x
-					</span>
+						Current Odds
+					</div>
+					<div className="space-y-2">
+						<div className="flex items-center justify-between">
+							<span
+								className="font-medium text-[#00b67a]"
+								style={{
+									fontFamily: "Space Grotesk",
+									fontSize: "14px",
+									lineHeight: "22.4px",
+								}}
+							>
+								YES
+							</span>
+							<span
+								className="text-[#00b67a] font-bold"
+								style={{
+									fontFamily: "Space Mono",
+									fontSize: "14px",
+									lineHeight: "22.4px",
+								}}
+							>
+								{market.yesOdds.toFixed(2)}×
+							</span>
+						</div>
+						<div className="flex items-center justify-between">
+							<span
+								className="font-medium text-[#ef4444]"
+								style={{
+									fontFamily: "Space Grotesk",
+									fontSize: "14px",
+									lineHeight: "22.4px",
+								}}
+							>
+								NO
+							</span>
+							<span
+								className="text-[#ef4444] font-bold"
+								style={{
+									fontFamily: "Space Mono",
+									fontSize: "14px",
+									lineHeight: "22.4px",
+								}}
+							>
+								{market.noOdds.toFixed(2)}×
+							</span>
+						</div>
+					</div>
 				</div>
-			</div>
+			)}
 		</div>
 	);
 }

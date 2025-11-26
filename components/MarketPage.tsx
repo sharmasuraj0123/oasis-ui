@@ -1,5 +1,6 @@
 "use client";
-import { binaryMarkets } from "@/lib/data";
+import { BinaryMarket } from "@/lib/data";
+import { getAllMarkets } from "@/dal/market";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { AgentLogoWrapper } from "./AgentLogoWrapper";
@@ -20,8 +21,10 @@ const onMarketSwipe = (marketId: string) => {};
 
 export const MarketPage = ({
 	selectedMarketId,
+	initialMarket,
 }: {
 	selectedMarketId: string;
+	initialMarket?: BinaryMarket;
 }) => {
 	const [isBettingModalOpen, setIsBettingModalOpen] = useState(false);
 	const [preSelectedOutcome, setPreSelectedOutcome] = useState<
@@ -30,15 +33,41 @@ export const MarketPage = ({
 	const [showSwipeHint, setShowSwipeHint] = useState(true);
 	const [isTransitioning, setIsTransitioning] = useState(false);
 	const [isChatModalOpen, setIsChatModalOpen] = useState(false);
+	const [markets, setMarkets] = useState<BinaryMarket[]>(
+		initialMarket ? [initialMarket] : []
+	);
+	const [isLoading, setIsLoading] = useState(!initialMarket);
 	const touchStartX = useRef<number>(0);
 	const touchEndX = useRef<number>(0);
 	const containerRef = useRef<HTMLDivElement>(null);
 
+	// Fetch all markets for navigation
+	useEffect(() => {
+		async function fetchMarkets() {
+			try {
+				const allMarkets = await getAllMarkets();
+				setMarkets(allMarkets);
+			} catch (error) {
+				console.error("Failed to fetch markets:", error);
+			} finally {
+				setIsLoading(false);
+			}
+		}
+		if (!initialMarket) {
+			fetchMarkets();
+		} else {
+			// If we have an initial market, still fetch all markets in the background
+			fetchMarkets();
+		}
+	}, [initialMarket]);
+
 	// Get current market index
-	const currentMarketIndex = binaryMarkets.findIndex(
+	const currentMarketIndex = markets.findIndex(
 		(m) => m.id === selectedMarketId
 	);
-	const currentMarket = binaryMarkets[currentMarketIndex] || binaryMarkets[0];
+	const currentMarket = currentMarketIndex >= 0 
+		? markets[currentMarketIndex] 
+		: initialMarket || markets[0];
 
 	// Hide swipe hint after 3 seconds
 	useEffect(() => {
@@ -81,18 +110,18 @@ export const MarketPage = ({
 		let newIndex = currentMarketIndex;
 
 		if (direction === "next") {
-			newIndex = (currentMarketIndex + 1) % binaryMarkets.length;
+			newIndex = (currentMarketIndex + 1) % markets.length;
 		} else {
 			newIndex =
 				currentMarketIndex === 0
-					? binaryMarkets.length - 1
+					? markets.length - 1
 					: currentMarketIndex - 1;
 		}
 
 		setIsTransitioning(true);
 
 		if (onMarketSwipe) {
-			onMarketSwipe(binaryMarkets[newIndex].id);
+			onMarketSwipe(markets[newIndex].id);
 		}
 
 		// Reset transition state after animation
@@ -100,6 +129,20 @@ export const MarketPage = ({
 			setIsTransitioning(false);
 		}, 300);
 	};
+
+	// Show loading state if no market is available
+	if (isLoading || !currentMarket) {
+		return (
+			<div className="flex items-center justify-center h-full">
+				<p
+					className="text-[#9e9e9e] text-lg"
+					style={{ fontFamily: "Space Grotesk" }}
+				>
+					Loading market...
+				</p>
+			</div>
+		);
+	}
 
 	return (
 		<div
@@ -139,7 +182,7 @@ export const MarketPage = ({
 							className="text-xs text-[#9e9e9e]"
 							style={{ fontFamily: "Space Mono" }}
 						>
-							Market {currentMarketIndex + 1} of {binaryMarkets.length}
+							Market {currentMarketIndex + 1} of {markets.length}
 						</p>
 						<p
 							className="text-sm font-medium mt-0.5 line-clamp-1"
@@ -160,7 +203,7 @@ export const MarketPage = ({
 
 				{/* Pagination Dots */}
 				<div className="flex items-center justify-center gap-1.5 pb-3">
-					{binaryMarkets.map((market, index) => (
+					{markets.map((market, index) => (
 						<button
 							key={market.id}
 							onClick={() => onMarketSwipe && onMarketSwipe(market.id)}
@@ -282,7 +325,10 @@ export const MarketPage = ({
 					{/* Dynamic Panel Based on Market Status */}
 					<div className="flex-shrink-0">
 						{currentMarket.status === "LIVE" && (
-							<BettingWidget onPlaceBet={() => setIsBettingModalOpen(true)} />
+							<BettingWidget 
+								onPlaceBet={() => setIsBettingModalOpen(true)} 
+								market={currentMarket}
+							/>
 						)}
 
 						{currentMarket.status === "UPCOMING" && (

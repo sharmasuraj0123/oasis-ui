@@ -4,7 +4,7 @@ import { Navbar } from "./Navbar";
 import { useWallet } from "@/lib/WalletContext";
 
 export function NavbarWrapper() {
-	const { isConnected, connectWallet, disconnectWallet } = useWallet();
+	const { isConnected, connectWallet, disconnectWallet, account } = useWallet();
 
 	const handleWalletAction = () => {
 		if (isConnected) {
@@ -14,6 +14,12 @@ export function NavbarWrapper() {
 		}
 	};
 
-	return <Navbar isWalletConnected={isConnected} onConnectWallet={handleWalletAction} />;
+	return (
+		<Navbar 
+			isWalletConnected={isConnected} 
+			onConnectWallet={handleWalletAction}
+			walletAddress={account}
+		/>
+	);
 }
 

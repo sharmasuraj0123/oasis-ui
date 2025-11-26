@@ -8,15 +8,20 @@ import { usePathname } from "next/navigation";
 interface NavbarProps {
 	isWalletConnected: boolean;
 	onConnectWallet: () => void;
+	walletAddress: string | null;
 }
 
-export function Navbar({ isWalletConnected, onConnectWallet }: NavbarProps) {
+export function Navbar({ isWalletConnected, onConnectWallet, walletAddress }: NavbarProps) {
 	const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 	const pathname = usePathname();
 
 	const handleConnectWallet = () => {
 		setIsMobileMenuOpen(false);
 		onConnectWallet();
+	};
+
+	const shortenAddress = (address: string) => {
+		return `${address.slice(0, 6)}...${address.slice(-4)}`;
 	};
 
 	return (
@@ -95,7 +100,15 @@ export function Navbar({ isWalletConnected, onConnectWallet }: NavbarProps) {
 						}}
 					>
 						<Wallet size={15} />
-						{isWalletConnected ? "Disconnect" : "Connect Wallet"}
+						{isWalletConnected && walletAddress ? (
+							<>
+								<span>{shortenAddress(walletAddress)}</span>
+								<span className="mx-1">|</span>
+								<span>Disconnect</span>
+							</>
+						) : (
+							"Connect Wallet"
+						)}
 					</button>
 
 					{/* Mobile Hamburger Menu Button */}
@@ -203,23 +216,64 @@ export function Navbar({ isWalletConnected, onConnectWallet }: NavbarProps) {
 						className="border-t border-[#eaeaea] px-6"
 						style={{ paddingTop: "25px", paddingBottom: "25px" }}
 					>
-						<button
-							onClick={handleConnectWallet}
-							className="w-full flex items-center justify-center gap-3 bg-white border-2 border-black rounded-full hover:bg-black hover:text-white transition-colors"
-							style={{ height: "60px" }}
-						>
-							<Wallet size={20} />
-							<span
-								className="font-medium tracking-wider"
-								style={{
-									fontFamily: "Space Mono",
-									fontSize: "15px",
-									letterSpacing: "0.75px",
-								}}
+						{isWalletConnected && walletAddress ? (
+							<div className="space-y-3">
+								<div 
+									className="text-center text-[#666] uppercase tracking-wider"
+									style={{
+										fontFamily: "Space Mono",
+										fontSize: "11px",
+										letterSpacing: "0.75px",
+									}}
+								>
+									Connected Wallet
+								</div>
+								<div
+									className="text-center font-medium"
+									style={{
+										fontFamily: "Space Mono",
+										fontSize: "14px",
+									}}
+								>
+									{shortenAddress(walletAddress)}
+								</div>
+								<button
+									onClick={handleConnectWallet}
+									className="w-full flex items-center justify-center gap-3 bg-white border-2 border-black rounded-full hover:bg-black hover:text-white transition-colors"
+									style={{ height: "60px" }}
+								>
+									<Wallet size={20} />
+									<span
+										className="font-medium tracking-wider"
+										style={{
+											fontFamily: "Space Mono",
+											fontSize: "15px",
+											letterSpacing: "0.75px",
+										}}
+									>
+										DISCONNECT
+									</span>
+								</button>
+							</div>
+						) : (
+							<button
+								onClick={handleConnectWallet}
+								className="w-full flex items-center justify-center gap-3 bg-white border-2 border-black rounded-full hover:bg-black hover:text-white transition-colors"
+								style={{ height: "60px" }}
 							>
-								{isWalletConnected ? "DISCONNECT" : "CONNECT WALLET"}
-							</span>
-						</button>
+								<Wallet size={20} />
+								<span
+									className="font-medium tracking-wider"
+									style={{
+										fontFamily: "Space Mono",
+										fontSize: "15px",
+										letterSpacing: "0.75px",
+									}}
+								>
+									CONNECT WALLET
+								</span>
+							</button>
+						)}
 					</div>
 				</div>
 			)}

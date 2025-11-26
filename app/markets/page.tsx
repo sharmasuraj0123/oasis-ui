@@ -2,7 +2,9 @@
 import { AgentLogoWrapper } from "@/components/AgentLogoWrapper";
 import { BettingModal } from "@/components/BettingModal";
 import { MarketTypeTag } from "@/components/MarketTypeTags";
-import { BinaryMarket, binaryMarkets, MarketType } from "@/lib/data";
+import { BinaryMarket, MarketType } from "@/lib/data";
+import { getAllMarkets } from "@/dal/market";
+import { useEffect, useState } from "react";
 import {
 	ChevronRight,
 	Filter,
@@ -11,7 +13,6 @@ import {
 	TrendingUp,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { use, useState } from "react";
 
 const onMarketClick = (marketId: string) => {};
 const onPlaceBet = (marketId: string, outcome: "YES" | "NO") => {};
@@ -33,11 +34,28 @@ const MarketsPage = () => {
 		"YES" | "NO" | undefined
 	>(undefined);
 	const [isBettingModalOpen, setIsBettingModalOpen] = useState(false);
+	const [markets, setMarkets] = useState<BinaryMarket[]>([]);
+	const [isLoading, setIsLoading] = useState(true);
 
 	const router = useRouter();
 
+	// Fetch markets on mount
+	useEffect(() => {
+		async function fetchMarkets() {
+			try {
+				const allMarkets = await getAllMarkets();
+				setMarkets(allMarkets);
+			} catch (error) {
+				console.error("Failed to fetch markets:", error);
+			} finally {
+				setIsLoading(false);
+			}
+		}
+		fetchMarkets();
+	}, []);
+
 	// Filter and sort markets
-	const filteredMarkets = binaryMarkets
+	const filteredMarkets = markets
 		.filter((market) => {
 			if (filterStatus !== "ALL" && market.status !== filterStatus)
 				return false;
@@ -153,9 +171,22 @@ const MarketsPage = () => {
 					</select>
 				</div>
 
+				{/* Loading State */}
+				{isLoading && (
+					<div className="text-center py-16">
+						<p
+							className="text-[#9e9e9e] text-lg mb-2"
+							style={{ fontFamily: "Space Grotesk" }}
+						>
+							Loading markets...
+						</p>
+					</div>
+				)}
+
 				{/* Markets Grid */}
-				<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 mb-8">
-					{filteredMarkets.map((market) => {
+				{!isLoading && (
+					<div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-5 mb-8">
+						{filteredMarkets.map((market) => {
 						const statusBadge = getStatusBadge(market.status);
 						const yesProb =
 							market.status === "RESOLVED"
@@ -468,11 +499,12 @@ const MarketsPage = () => {
 								)}
 							</div>
 						);
-					})}
-				</div>
+						})}
+					</div>
+				)}
 
 				{/* Empty State */}
-				{filteredMarkets.length === 0 && (
+				{!isLoading && filteredMarkets.length === 0 && (
 					<div className="text-center py-16">
 						<p
 							className="text-[#9e9e9e] text-lg mb-2"
